@@ -1,0 +1,427 @@
+{
+  "name": "My workflow 38",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sahilimageanalyser.cognitiveservices.azure.com/vision/v3.2/read/analyze",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data0",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "27d8358f-351c-4a79-8169-f1cbc29b26e9",
+      "name": "Microsoft azure",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "googleApi": {
+          "id": "<REDACTED_CREDENTIAL_ID>", "name": "<REDACTED_CREDENTIAL_NAME>"
+        },
+        "httpHeaderAuth": {
+          "id": "<REDACTED_CREDENTIAL_ID>", "name": "<REDACTED_CREDENTIAL_NAME>"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst headers = item.json.headers;\n\n// Azure returns operation URL in header\nconst operationUrl = headers['operation-location'] || headers['Operation-Location'];\n\nif (!operationUrl) {\n  throw new Error('No operation-location header found in Azure response');\n}\n\nreturn [{\n  json: {\n    operationUrl: operationUrl,\n    section: item.json.section,\n    focusArea: item.json.focusArea\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        16
+      ],
+      "id": "7859f6a1-22dd-4872-a277-9b6b7a9680ba",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert English language checker analyzing text extracted from PACKAGING/GIFT COMPANY marketing materials via OCR.\n\n**CONTEXT:** This is packaging copy for consumer products - expect technical product codes, brand names, and specification formats.\n\n**OCR Words (individual words for spell checking):**\n{{$json.words}}\n\n**Full Text (for context only):**\n{{ $json.fullText }}\n\n**CRITICAL INSTRUCTIONS:**\n\n1. **ONLY FLAG GENUINE SPELLING ERRORS** - common misspellings of real English words\n   - Examples to flag: \"teh\" instead of \"the\", \"recieve\" instead of \"receive\"\n   - DO NOT flag: product codes, brand names, technical specifications, proper nouns\n\n2. **DO NOT FLAG AS ERRORS:**\n   - Product codes (e.g., \"FOCO-17\", \"REV.11240\", \"V.2024\")\n   - Brand names (e.g., \"Brooklyn Lollipop\", company names)\n   - Technical specifications (measurement formats, model numbers)\n   - Acronyms and abbreviations in all caps\n   - Proper nouns and location names\n   - Date formats and version numbers\n   - Words in non-English languages (if part of brand/product name)\n\n3. **IGNORE \"FLOW\" ERRORS** - Do not analyze paragraph flow, sentence structure, or text organization\n   - This is fragmented packaging copy, not prose\n   - Text order doesn't need to be logical\n\n4. **GRAMMAR RULES:**\n   - Only flag missing periods at the end of complete sentences\n   - Only flag clear subject-verb agreement errors\n   - Ignore punctuation in product codes and specifications\n\n**Return ONLY valid JSON (no markdown, no code blocks):**\n\n{\n  \"word_level_errors\": [\n    {\n      \"error_type\": \"spelling\",\n      \"found_text\": \"exact incorrect word\",\n      \"corrected_text\": \"correct word\",\n      \"location\": \"approximate location in text\",\n      \"severity\": \"high\",\n      \"explanation\": \"brief explanation of why this is wrong\"\n    }\n  ],\n  \"paragraph_level_errors\": [\n    {\n      \"error_type\": \"grammar|punctuation\",\n      \"found_text\": \"text segment with error (max 15 words)\",\n      \"corrected_text\": \"corrected version\",\n      \"location\": \"approximate location\",\n      \"severity\": \"high|medium\",\n      \"explanation\": \"brief explanation\"\n    }\n  ],\n  \"summary\": {\n    \"total_word_errors\": 0,\n    \"total_paragraph_errors\": 0,\n    \"spelling_errors\": 0,\n    \"grammar_errors\": 0,\n    \"punctuation_errors\": 0,\n    \"flow_errors\": 0,\n    \"overall_text_quality\": \"excellent|good|fair|poor\"\n  },\n  \"image_metadata\": {\n    \"total_sections_analyzed\": 3,\n    \"text_quality\": \"high|medium|low\",\n    \"readability_score\": \"high|medium|low\"\n  }\n}\n\n**VALIDATION CHECKLIST BEFORE FLAGGING:**\n- ✓ Is this a real English word spelled incorrectly?\n- ✓ Is this NOT a product code or brand name?\n- ✓ Is this NOT a technical specification?\n- ✓ Will fixing this improve the actual text quality?\n\n**EXAMPLES OF WHAT TO FLAG:**\n- \"recieve\" → \"receive\" (spelling error)\n- \"thier\" → \"their\" (spelling error)\n- \"occured\" → \"occurred\" (spelling error)\n\n**EXAMPLES OF WHAT NOT TO FLAG:**\n- \"FOCO-17\" (product code)\n- \"REV.11240\" (revision number)\n- \"Brooklyn Lollipop\" (brand name)\n- \"U.S.Army\" (proper noun)\n- Fragmented sentences in specifications"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        16
+      ],
+      "id": "2a4a2370-df27-496b-91fe-a22255b04af2",
+      "name": "Message a model2",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": null,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "<REDACTED_CREDENTIAL_ID>", "name": "<REDACTED_CREDENTIAL_NAME>"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract only word text from Azure OCR response\nconst azureResponse = $input.item.json.body;\n\nconst allWords = [];\n\nazureResponse.analyzeResult.readResults.forEach(page => {\n  page.lines.forEach(line => {\n    line.words.forEach(word => {\n      allWords.push(word.text);\n    });\n  });\n});\n\nreturn [{\n  json: {\n    words: allWords,\n    fullText: allWords.join(' ')\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        16
+      ],
+      "id": "1229df83-45aa-4ab3-9a4b-cf76b53137e7",
+      "name": "Parse Google Vision Response2",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini response and extract errors\nconst item = $input.first().json;\n\nlet rawText = \"\";\n\n// Extract text from various possible structures\nif (item.content?.parts?.[0]?.text) {\n  rawText = item.content.parts[0].text;\n} else if (item.candidates?.[0]?.content?.parts?.[0]?.text) {\n  rawText = item.candidates[0].content.parts[0].text;\n} else if (typeof item === 'string') {\n  rawText = item;\n} else {\n  rawText = JSON.stringify(item);\n}\n\n// Clean markdown fences\nrawText = rawText.replace(/```json|```/g, '').trim();\n\n// Parse JSON\nlet parsed;\ntry {\n  parsed = JSON.parse(rawText);\n} catch (e) {\n  console.error('Parse error:', e.message);\n  return [{\n    json: {\n      error: 'Failed to parse Gemini output',\n      raw_preview: rawText.substring(0, 500)\n    }\n  }];\n}\n\nconst errors = parsed.errors_detected || [];\nconst summary = parsed.summary || {};\nconst metadata = parsed.image_metadata || {};\n\nreturn [{\n  json: {\n    parsed_response: parsed,\n    errors: errors,\n    summary: summary,\n    metadata: metadata,\n    total_errors: errors.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        16
+      ],
+      "id": "a8602d46-fb97-4282-8dca-11df5c5fe8ca",
+      "name": "Parse Gemini Response2",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Try to get execution ID from the Generate Execution ID node\nlet executionId;\ntry {\n  executionId = $('Generate Execution ID').first().json.executionId;\n} catch (e) {\n  // Fallback: generate one here if the node didn't execute\n  const crypto = require('crypto');\n  executionId = crypto.randomUUID();\n  console.log('Generated fallback execution ID:', executionId);\n}\n\nconst crypto = require('crypto');\nconst inputItem = $input.first().json;\n\n// Get errors from parsed_response\nconst wordErrors = inputItem.parsed_response?.word_level_errors || [];\nconst paragraphErrors = inputItem.parsed_response?.paragraph_level_errors || [];\n\n// Combine all errors\nconst allErrors = [\n  ...wordErrors.map(error => ({ ...error, error_level: 'word' })),\n  ...paragraphErrors.map(error => ({ ...error, error_level: 'paragraph' }))\n];\n\n// If no errors, return empty array\nif (allErrors.length === 0) {\n  return [];\n}\n\n// Map fields to match Supabase column names\nreturn allErrors.map((error) => ({\n  json: {\n    executionId: executionId,\n    error_id: crypto.randomUUID(),\n    found_text: error.found_text || '',\n    error_type: error.error_type || '',\n    correction: error.corrected_text || '', // Map corrected_text → correction\n    issue_description: error.explanation || '', // Map explanation → issue_description\n    panel_zone: error.location || '', // Map location → panel_zone\n    confidence: error.confidence || '', // Add confidence if available\n    error_level: error.error_level || '', // Add error_level\n    severity: error.severity || '', // Add severity\n    coordinates: '' // Empty for now, add if you have coordinate data\n  }\n}));\n"
+      },
+      "id": "b54f3d6e-ee8b-45a6-93dd-2cd66c396bf9",
+      "name": "Add Execution ID to Errors2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "ocr_table",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "executionId",
+              "fieldValue": "=\"{{ $json.executionId }}\""
+            },
+            {
+              "fieldId": "found_text",
+              "fieldValue": "=\"{{ $json.found_text }}\""
+            },
+            {
+              "fieldId": "error_type",
+              "fieldValue": "=\"{{$json.error_type}}\""
+            },
+            {
+              "fieldId": "issue_description",
+              "fieldValue": "=\"{{ $json.issue_description }}\""
+            },
+            {
+              "fieldId": "correction",
+              "fieldValue": "=\"{{ $json.correction }}\""
+            },
+            {
+              "fieldId": "executionId",
+              "fieldValue": "=\"{{ $json.executionId }}\""
+            },
+            {
+              "fieldId": "panel_zone",
+              "fieldValue": "=\"{{ $json.panel_zone }}\""
+            },
+            {
+              "fieldId": "confidence",
+              "fieldValue": "=\"{{ $json.confidence }}\""
+            },
+            {
+              "fieldId": "error_id",
+              "fieldValue": "=\"{{ $json.error_id }}\""
+            },
+            {
+              "fieldId": "coordinates",
+              "fieldValue": "=\"{{ $json.coordinates }}\""
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        32
+      ],
+      "id": "fb2b164c-0370-41dc-861b-9d7a9e09f74d",
+      "name": "Create a row2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "<REDACTED_CREDENTIAL_ID>", "name": "<REDACTED_CREDENTIAL_NAME>"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        16
+      ],
+      "id": "df6cf204-7e4c-4d51-a8d6-1157431196b3",
+      "name": "Wait1",
+      "webhookId": "<REDACTED_WEBHOOK_ID>"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.operationUrl}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        848,
+        16
+      ],
+      "id": "d0dc9b71-a92e-4d45-b64a-dde1e5b25b4a",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "<REDACTED_CREDENTIAL_ID>", "name": "<REDACTED_CREDENTIAL_NAME>"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "49b9f329-656a-495e-b558-fa9ea8b7a554",
+              "leftValue": "={{ $json.issue_description }}",
+              "rightValue": "=Correctly",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "e292574c-359b-45b3-be60-232460e49c9f",
+              "leftValue": "={{ $json.issue_description }}",
+              "rightValue": "Correct",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        16
+      ],
+      "id": "5927b983-40b0-4813-bd0a-57844012f6e7",
+      "name": "Filter",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "formTitle": "data0",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "data0",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1f69e7f8-c2df-4b9e-b90a-d1e04a9e1d85",
+      "name": "On form submission",
+      "webhookId": "<REDACTED_WEBHOOK_ID>"
+    }
+  ],
+  "connections": {
+    "Microsoft azure": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model2": {
+      "main": [
+        [
+          {
+            "node": "Parse Gemini Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Google Vision Response2": {
+      "main": [
+        [
+          {
+            "node": "Message a model2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Gemini Response2": {
+      "main": [
+        [
+          {
+            "node": "Add Execution ID to Errors2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Execution ID to Errors2": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Parse Google Vision Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Create a row2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Microsoft azure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
